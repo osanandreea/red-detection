@@ -1,0 +1,3 @@
+C:/Users/Andreea/CLionProjects/untitled4/cmake-build-debug/CMakeFiles/RedDetection.dir
+C:/Users/Andreea/CLionProjects/untitled4/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Andreea/CLionProjects/untitled4/cmake-build-debug/CMakeFiles/rebuild_cache.dir
