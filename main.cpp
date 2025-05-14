@@ -4,9 +4,6 @@
 using namespace std;
 using namespace cv;
 
-// ——————————————————————————————————————————————————————————————
-// Prot­otipuri funcții
-// ——————————————————————————————————————————————————————————————
 Mat           loadImage(const string& path);
 Mat           convertToYCrCb(const Mat& src);
 Mat           segmentSkin(const Mat& ycrcb);
@@ -16,10 +13,6 @@ Rect          getLargestBoundingRect(const vector<vector<Point>>& contours);
 Mat           createEyeMask(const Mat& faceROI);
 vector<Rect>  detectEyes(const Mat& eyeMask);
 void          drawRectangleOnImage(Mat& img, const Rect& rect);
-
-// ——————————————————————————————————————————————————————————————
-// Implementări
-// ——————————————————————————————————————————————————————————————
 
 Mat loadImage(const string& path) {
     Mat img = imread(path);
@@ -74,21 +67,17 @@ Rect getLargestBoundingRect(const vector<vector<Point>>& contours) {
     return boundingRect(contours[bestIdx]);
 }
 
-// Construiește o mască CV_8UC1 a zonei ochilor (umbre intunecate)
 Mat createEyeMask(const Mat& faceROI) {
     Mat gray, blurImg, blackhat, thresh, mask;
-    // 1) Gri și blur
+
     cvtColor(faceROI, gray, COLOR_BGR2GRAY);
     GaussianBlur(gray, blurImg, Size(7,7), 1.5);
 
-    // 2) Black-hat ca să evidențiem umbrele din iris
     Mat k1 = getStructuringElement(MORPH_ELLIPSE, Size(15,15));
     morphologyEx(blurImg, blackhat, MORPH_BLACKHAT, k1);
 
-    // 3) Threshold: umbrele (zonele întunecate) devin 255
     threshold(blackhat, thresh, 10, 255, THRESH_BINARY);
 
-    // 4) Curățire și mică dilatare
     Mat k2 = getStructuringElement(MORPH_ELLIPSE, Size(5,5));
     morphologyEx(thresh, mask, MORPH_OPEN,   k2);
     morphologyEx(mask, mask, MORPH_CLOSE,    k2);
@@ -97,10 +86,8 @@ Mat createEyeMask(const Mat& faceROI) {
     return mask;
 }
 
-// Din masca CV_8UC1 a ochilor extrage cele două rect-uri
 vector<Rect> detectEyes(const Mat& eyeMask) {
     auto ctrs = findSkinContours(eyeMask);
-    // sort descrescător după arie
     sort(ctrs.begin(), ctrs.end(),
          [](const vector<Point>& a, const vector<Point>& b){
              return contourArea(a) > contourArea(b);
@@ -108,7 +95,6 @@ vector<Rect> detectEyes(const Mat& eyeMask) {
     vector<Rect> eyes;
     for (size_t i = 0; i < ctrs.size() && eyes.size() < 2; ++i) {
         Rect r = boundingRect(ctrs[i]);
-        // filtrăm dupa dimensiune și poziție (sus-față)
         if (r.width  < eyeMask.cols/4  && r.width  > eyeMask.cols/20 &&
             r.height < eyeMask.rows/4  && r.height > eyeMask.rows/20 &&
             r.y + r.height/2 < eyeMask.rows/2)
@@ -124,15 +110,10 @@ void drawRectangleOnImage(Mat& img, const Rect& rect) {
         rectangle(img, rect, Scalar(0,255,0), 2);
 }
 
-// ——————————————————————————————————————————————————————————————
-// main
-// ——————————————————————————————————————————————————————————————
 int main(){
-    // 1) Încarcă și afișează originalul
     Mat img       = loadImage(R"(C:\Users\Andreea\CLionProjects\untitled4\red-eye-fix2.jpg)");
     imshow("Original", img);
 
-    // 2) Detectează și desenează fața
     Mat ycrcb     = convertToYCrCb(img);
     Mat skinMask  = segmentSkin(ycrcb);
     Mat cleanFace = cleanMask(skinMask);
@@ -141,13 +122,11 @@ int main(){
     drawRectangleOnImage(img, faceRect);
     imshow("Detected Face", img);
 
-    // 3) Creează mască ochi și detectează ochii
     Mat faceROI = img(faceRect).clone();
     Mat eyeMask = createEyeMask(faceROI);
     imshow("Eye Mask", eyeMask);
     auto eyes = detectEyes(eyeMask);
 
-    // 4) Desenează ochii pe imaginea globală
     for (auto &e : eyes) {
         Rect ge(e.x + faceRect.x, e.y + faceRect.y, e.width, e.height);
         drawRectangleOnImage(img, ge);
