@@ -1,18 +1,20 @@
 #include <iostream>
 #include <vector>
 #include <opencv2/opencv.hpp>
+
 using namespace std;
 using namespace cv;
 
-Mat           loadImage(const string& path);
-Mat           convertToYCrCb(const Mat& src);
-Mat           segmentSkin(const Mat& ycrcb);
-Mat           cleanMask(const Mat& mask);
+Mat loadImage(const string& path);
+Mat convertToYCrCb(const Mat& src);
+Mat segmentSkin(const Mat& ycrcb);
+Mat cleanMask(const Mat& mask);
 vector<vector<Point>> findSkinContours(const Mat& mask);
-Rect          getLargestBoundingRect(const vector<vector<Point>>& contours);
-Mat           createEyeMask(const Mat& faceROI);
-vector<Rect>  detectEyes(const Mat& eyeMask);
-void          drawRectangleOnImage(Mat& img, const Rect& rect);
+Rect getLargestBoundingRect(const vector<vector<Point>>& contours);
+Mat createEyeMask(const Mat& faceROI);
+vector<Rect> detectEyes(const Mat& eyeMask);
+void drawRectangleOnImage(Mat& img, const Rect& rect);
+void fixRedEye(Mat& img, const Rect& eyeRect);
 
 Mat loadImage(const string& path) {
     Mat img = imread(path);
@@ -31,10 +33,7 @@ Mat convertToYCrCb(const Mat& src) {
 
 Mat segmentSkin(const Mat& ycrcb) {
     Mat mask;
-    inRange(ycrcb,
-            Scalar(  0, 140, 100),
-            Scalar(255, 170, 130),
-            mask);
+    inRange(ycrcb, Scalar(0,140,100), Scalar(255,170,130), mask);
     return mask;
 }
 
@@ -42,7 +41,7 @@ Mat cleanMask(const Mat& mask) {
     Mat tmp = mask.clone();
     Mat k = getStructuringElement(MORPH_ELLIPSE, Size(15,15));
     morphologyEx(tmp, tmp, MORPH_CLOSE, k);
-    morphologyEx(tmp, tmp, MORPH_OPEN,  k);
+    morphologyEx(tmp, tmp, MORPH_OPEN, k);
     return tmp;
 }
 
@@ -69,20 +68,15 @@ Rect getLargestBoundingRect(const vector<vector<Point>>& contours) {
 
 Mat createEyeMask(const Mat& faceROI) {
     Mat gray, blurImg, blackhat, thresh, mask;
-
     cvtColor(faceROI, gray, COLOR_BGR2GRAY);
     GaussianBlur(gray, blurImg, Size(7,7), 1.5);
-
     Mat k1 = getStructuringElement(MORPH_ELLIPSE, Size(15,15));
     morphologyEx(blurImg, blackhat, MORPH_BLACKHAT, k1);
-
     threshold(blackhat, thresh, 10, 255, THRESH_BINARY);
-
     Mat k2 = getStructuringElement(MORPH_ELLIPSE, Size(5,5));
-    morphologyEx(thresh, mask, MORPH_OPEN,   k2);
-    morphologyEx(mask, mask, MORPH_CLOSE,    k2);
+    morphologyEx(thresh, mask, MORPH_OPEN, k2);
+    morphologyEx(mask, mask, MORPH_CLOSE, k2);
     dilate(mask, mask, getStructuringElement(MORPH_ELLIPSE, Size(7,7)));
-
     return mask;
 }
 
@@ -95,10 +89,9 @@ vector<Rect> detectEyes(const Mat& eyeMask) {
     vector<Rect> eyes;
     for (size_t i = 0; i < ctrs.size() && eyes.size() < 2; ++i) {
         Rect r = boundingRect(ctrs[i]);
-        if (r.width  < eyeMask.cols/4  && r.width  > eyeMask.cols/20 &&
-            r.height < eyeMask.rows/4  && r.height > eyeMask.rows/20 &&
-            r.y + r.height/2 < eyeMask.rows/2)
-        {
+        if (r.width < eyeMask.cols/4 && r.width > eyeMask.cols/20 &&
+            r.height < eyeMask.rows/4 && r.height > eyeMask.rows/20 &&
+            r.y + r.height/2 < eyeMask.rows/2) {
             eyes.push_back(r);
         }
     }
@@ -110,15 +103,31 @@ void drawRectangleOnImage(Mat& img, const Rect& rect) {
         rectangle(img, rect, Scalar(0,255,0), 2);
 }
 
+void fixRedEye(Mat& img, const Rect& eyeRect) {
+    Mat roi = img(eyeRect);
+    const int RED_MIN        = 50;
+    const int RED_OVER_GREEN = 15;
+    const int RED_OVER_BLUE  = 15;
+    for (int y = 0; y < roi.rows; ++y) {
+        for (int x = 0; x < roi.cols; ++x) {
+            Vec3b &pixel = roi.at<Vec3b>(y, x);
+            int B = pixel[0], G = pixel[1], R = pixel[2];
+            if (R > RED_MIN && R > G + RED_OVER_GREEN && R > B + RED_OVER_BLUE) {
+                pixel = Vec3b(0,0,0);
+            }
+        }
+    }
+}
+
 int main(){
-    Mat img       = loadImage(R"(C:\Users\Andreea\CLionProjects\untitled4\red-eye-fix2.jpg)");
+    Mat img = loadImage(R"(C:\Users\Andreea\CLionProjects\untitled4\red-eye-fix2.jpg)");
     imshow("Original", img);
 
     Mat ycrcb     = convertToYCrCb(img);
     Mat skinMask  = segmentSkin(ycrcb);
     Mat cleanFace = cleanMask(skinMask);
     auto faceCtrs = findSkinContours(cleanFace);
-    Rect faceRect= getLargestBoundingRect(faceCtrs);
+    Rect faceRect = getLargestBoundingRect(faceCtrs);
     drawRectangleOnImage(img, faceRect);
     imshow("Detected Face", img);
 
@@ -128,11 +137,15 @@ int main(){
     auto eyes = detectEyes(eyeMask);
 
     for (auto &e : eyes) {
-        Rect ge(e.x + faceRect.x, e.y + faceRect.y, e.width, e.height);
+        Rect ge(e.x + faceRect.x,
+                e.y + faceRect.y,
+                e.width,
+                e.height);
+        fixRedEye(img, ge);
         drawRectangleOnImage(img, ge);
     }
-    imshow("Detected Face and Eyes", img);
 
+    imshow("Red-Eye Fixed", img);
     waitKey();
     return 0;
 }
