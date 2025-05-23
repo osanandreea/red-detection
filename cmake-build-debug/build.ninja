@@ -50,7 +50,7 @@ cmake_ninja_workdir = C$:\Users\Andreea\CLionProjects\untitled4\cmake-build-debu
 build cmake_object_order_depends_target_RedDetection: phony || .
 
 build CMakeFiles\RedDetection.dir\main.cpp.obj: CXX_COMPILER__RedDetection_unscanned_Debug C$:\Users\Andreea\CLionProjects\untitled4\main.cpp || cmake_object_order_depends_target_RedDetection
-  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
+  FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1 -std:c++17
   INCLUDES = -external:IC:\Users\Andreea\opencv\build\include -external:W0
   OBJECT_DIR = CMakeFiles\RedDetection.dir
   OBJECT_FILE_DIR = CMakeFiles\RedDetection.dir
@@ -65,10 +65,10 @@ build CMakeFiles\RedDetection.dir\main.cpp.obj: CXX_COMPILER__RedDetection_unsca
 #############################################
 # Link the executable RedDetection.exe
 
-build RedDetection.exe: CXX_EXECUTABLE_LINKER__RedDetection_Debug CMakeFiles\RedDetection.dir\main.cpp.obj | C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib
+build RedDetection.exe: CXX_EXECUTABLE_LINKER__RedDetection_Debug CMakeFiles\RedDetection.dir\main.cpp.obj | C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib C$:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib
   FLAGS = /DWIN32 /D_WINDOWS /W3 /GR /EHsc /MDd /Zi /Ob0 /Od /RTC1
   LINK_FLAGS = /machine:x64 /debug /INCREMENTAL /subsystem:console
-  LINK_LIBRARIES = C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
+  LINK_LIBRARIES = C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  C:\Users\Andreea\opencv\build\x64\vc16\lib\opencv_world4110d.lib  kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib
   OBJECT_DIR = CMakeFiles\RedDetection.dir
   POST_BUILD = cd .
   PRE_LINK = cd .

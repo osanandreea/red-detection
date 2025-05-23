@@ -1,9 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <chrono>
 
 using namespace std;
 using namespace cv;
+using Clock = std::chrono::high_resolution_clock;
+using ms    = std::chrono::duration<double, std::milli>;
 
 Mat loadImage(const string& path);
 Mat convertToYCrCb(const Mat& src);
@@ -105,22 +108,27 @@ void drawRectangleOnImage(Mat& img, const Rect& rect) {
 
 void fixRedEye(Mat& img, const Rect& eyeRect) {
     Mat roi = img(eyeRect);
-    const int RED_MIN        = 50;
-    const int RED_OVER_GREEN = 15;
-    const int RED_OVER_BLUE  = 15;
+    const int RED_MIN        = 80;
+    const int RED_OVER_GREEN = 80;
+    const int RED_OVER_BLUE  = 80;
+
     for (int y = 0; y < roi.rows; ++y) {
         for (int x = 0; x < roi.cols; ++x) {
             Vec3b &pixel = roi.at<Vec3b>(y, x);
             int B = pixel[0], G = pixel[1], R = pixel[2];
-            if (R > RED_MIN && R > G + RED_OVER_GREEN && R > B + RED_OVER_BLUE) {
+            if (R >= RED_MIN
+             && (R - G) >= RED_OVER_GREEN
+             && (R - B) >= RED_OVER_BLUE) {
                 pixel = Vec3b(0,0,0);
-            }
+             }
         }
     }
 }
 
+
 int main(){
-    Mat img = loadImage(R"(C:\Users\Andreea\CLionProjects\untitled4\red-eye-fix2.jpg)");
+    auto start = Clock::now();
+    Mat img = loadImage(R"(C:\Users\Andreea\CLionProjects\untitled4\red-eye-fix7.jpg)");
     imshow("Original", img);
 
     Mat ycrcb     = convertToYCrCb(img);
@@ -138,14 +146,25 @@ int main(){
 
     for (auto &e : eyes) {
         Rect ge(e.x + faceRect.x,
+                 e.y + faceRect.y,
+                 e.width, e.height);
+        drawRectangleOnImage(img, ge);
+    }
+    imshow("Detected Face and Eyes", img);
+
+    for (auto &e : eyes) {
+        Rect ge(e.x + faceRect.x,
                 e.y + faceRect.y,
                 e.width,
                 e.height);
         fixRedEye(img, ge);
         drawRectangleOnImage(img, ge);
     }
+    auto end = Clock::now();
+    double total_ms = ms(end - start).count();
 
     imshow("Red-Eye Fixed", img);
+    std::cout << "Total runtime: " << total_ms << " ms\n";
     waitKey();
     return 0;
 }
